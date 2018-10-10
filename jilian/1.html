@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>组织架构级联</title>
+    <style>
+        .org-menu {
+
+        }
+        .org-menu ul {
+            display: none;
+        }
+        .org-menu ul > li {
+            display: block;
+        }
+        .org-menu > ul:first-child {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="org-menu"></div>
+    <select class="company">
+
+    </select>
+</body>
+<script src="jquery-1.11.3.js"></script>
+<script>
+    var arrs = []; //数据格式为[{oid: '', name: '', children: [], pid: ''}]
+    var menus = '';
+    var orgHtml = '';
+    var companyHtml = '';
+    //查询到的服务器组织架构数组类型
+    var arr = [
+        {oid: '1', name: '时信',
+            children: [
+                {oid: '21', name: '人力资源中心', children: [
+                    {oid: '211', name: '人事部', children: []},
+                    {oid: '212', name: '行政部', children: []},
+                    {oid: '213', name: '培训教育部', children: []}
+                ]},
+                {oid: '22', name: '运营中心', children: [
+                    {oid: '221', name: '企划部', children: []},
+                    {oid: '222', name: '采购部', children: []},
+                    {oid: '223', name: '营销部', children: [
+                        {oid: '2231', name: '国内销售部', children: []},
+                        {oid: '2232', name: '国际销售部', children: []}
+                    ]},
+                    {oid: '224', name: '仓管部', children: []},
+                    {oid: '225', name: '客服部', children: []}
+                ]}
+            ]
+        },
+        {oid: '2', name: '悦维',
+            children: [
+                {oid: '21', name: '悦维人力中心', children: [
+                    {oid: '211', name: '人事部', children: []},
+                    {oid: '212', name: '行政部', children: []},
+                    {oid: '213', name: '培训教育部', children: []}
+                ]}
+            ]
+        }
+    ];
+    //将数据库返回的数据格式转为[{oid: '21', name: '人力资源中心',children: [], pid: '1'}]
+    function getArray(data) {
+        for(var i = 0; i < data.length; i ++) {
+            var oid = data[i].oid;
+            if(data[i].children.length > 0) {
+                for(var j = 0; j < data[i].children.length; j++) {
+                    var child = data[i].children[j];
+                    child['pid'] = oid;
+                    arrs.push(child);
+                }
+                getArray(data[i].children);
+            }
+        }
+        return arrs;
+    }
+    //根据id获取子菜单
+    function getParentArray(id, data) {
+        var newArray = new Array();
+        for(var i in data) {
+            if(data[i].pid == id) {
+                newArray.push(data[i]);
+            }
+        }
+        return newArray;
+    }
+    //拼接级联菜单
+    //先递归，递归执行完之后再循环
+    function getHtml(id, data) {
+        var childArray = getParentArray(id, data);
+        if (childArray.length > 0) {
+            menus += '<ul>';
+            for (var i in childArray) {
+                menus += '<li><a href="javascript:;">' + childArray[i].name + ' </a>';
+                getHtml(childArray[i].oid, data);
+                menus += '</li>';
+            }
+            menus += '</ul>';
+        }
+        return menus;
+    }
+    for(var i = 0; i < arr.length; i++) {
+        arrs = arrs.length > 0 ? [] : arrs;
+        menus = menus != '' ? '' : menus;
+        var company = arr[i];
+        var orgList = getArray([company]);
+        orgHtml += getHtml(company.oid, orgList);
+        companyHtml += '<option>' + arr[i].name + '</option>';
+    }
+    document.getElementsByClassName('company')[0].innerHTML = companyHtml;
+    document.getElementsByClassName('org-menu')[0].innerHTML = orgHtml;
+    //公司切换
+    $('.company').on('change', function(e) {
+        var el = $(e.currentTarget);
+        var curIndex = $('.company option:selected').index();
+        console.log($('.org-menu > ul')[0]);
+        console.log($('.org-menu > ul').eq(curIndex)[0]);
+        $('.org-menu > ul').eq(curIndex).show().siblings('ul').hide();
+    });
+    //菜单显示隐藏
+    $('.org-menu').on('click', 'a', function (e) {
+        var el = $(e.currentTarget);
+        if(el.next()[0]) {
+            el.next().toggle();
+        }
+    })
+</script>
+</html>
